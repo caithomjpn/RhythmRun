@@ -5,7 +5,7 @@ using UnityEngine.SceneManagement;
 public class RestartFunction : MonoBehaviour
 {
 
-    // Start is called before the first frame update
+    // Triggers when plyaer touches the object
     private void OnTriggerEnter(Collider other)
     {
         Debug.Log(other.gameObject.name + " entered the DeathZone");
@@ -16,6 +16,7 @@ public class RestartFunction : MonoBehaviour
             RestartGame();
         }
     }
+    //restart function
     void RestartGame()
     {
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
