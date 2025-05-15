@@ -2,90 +2,95 @@ using UnityEngine;
 
 public class EnemyShooter : MonoBehaviour
 {
-    [Header("Shooting")]
-    public GameObject bulletPrefab;      // The bullet prefab (must be assigned)
-    public Transform firePoint;          // The firePoint from which bullets are spawned
-    public AudioSource shootSound;       // Audio source that plays when shooting
-
-    [Header("Rhythm Settings")]
-    [Tooltip("Shoot on every Nth beat (e.g. 4 = every 4th beat)")]
-    public int shootEveryNthBeat = 4;
-    [Tooltip("Bullet speed in units per second")]
-    public float bulletSpeed = 10f;
+    [Header("Shooting Settings")]
+    [SerializeField] private GameObject bulletPrefab;
+    [SerializeField] private Transform firePoint;
+    [SerializeField] private int shootEveryNthBeat = 2;
+    [SerializeField] private float bulletSpeed = 10f;
 
     private Transform player;
     private int beatCounter = 0;
-    // When true, shooting will stop permanently.
     private bool shootingDisabledPermanently = false;
+    public AudioSource shootSound;
 
     void Start()
     {
-        // Find the player by tag ("Player")
+        // Initial player lookup
         player = GameObject.FindGameObjectWithTag("Player")?.transform;
-        // Subscribe to the metronome's beat event
+
+        // Listen to metronome beat events
         Metronome.OnBeat += HandleBeat;
+    }
+
+    void Update()
+    {
+        // Optional: auto-recover if player reference gets lost mid-game
+        if (player == null)
+        {
+            player = GameObject.FindGameObjectWithTag("Player")?.transform;
+        }
     }
 
     void HandleBeat()
     {
-        if (player == null || firePoint == null || bulletPrefab == null) return;
+        // Detailed null checks to identify what’s missing
+        if (player == null)
+        {
+            Debug.LogWarning("Player reference is null.");
+            return;
+        }
+        if (firePoint == null)
+        {
+            Debug.LogWarning("FirePoint is null.");
+            return;
+        }
+        if (bulletPrefab == null)
+        {
+            Debug.LogWarning("Bullet prefab is null.");
+            return;
+        }
 
-        // Round Z position to avoid float errors
+        // Compare Z positions, rounded to avoid floating point issues
         float playerZ = Mathf.Round(player.position.z * 10f) / 10f;
         float enemyZ = Mathf.Round(transform.position.z * 10f) / 10f;
 
+        Debug.Log($"[BEAT {beatCounter}] PlayerZ={playerZ} | EnemyZ={enemyZ} | Stopped={shootingDisabledPermanently}");
+
+        // Optional permanent stop condition
         if (!shootingDisabledPermanently && Mathf.Approximately(playerZ, enemyZ))
         {
             shootingDisabledPermanently = true;
-            Debug.Log(" Enemy stopped shooting — Z position matched!");
+            Debug.Log("Enemy permanently stopped shooting due to Z-position match.");
             return;
         }
 
         if (shootingDisabledPermanently) return;
 
         beatCounter++;
+
         if (beatCounter % shootEveryNthBeat == 0)
         {
-            Debug.Log($"Bullet instantiated at beat {beatCounter}");
             Shoot();
         }
     }
 
-
-
     void Shoot()
     {
-        Debug.Log($"Bullet instantiated at beat {beatCounter}");
-
-        if (bulletPrefab == null || firePoint == null)
-        {
-            Debug.LogWarning("Bullet prefab or firePoint is missing. Cannot shoot.");
-            return;
-        }
+        if (bulletPrefab == null || firePoint == null) return;
 
         GameObject bullet = Instantiate(bulletPrefab, firePoint.position, firePoint.rotation);
 
-        if (bullet == null)
-        {
-            Debug.LogError("Bullet failed to instantiate!");
-            return;
-        }
-
         Rigidbody rb = bullet.GetComponent<Rigidbody>();
         if (rb != null)
-        {
             rb.velocity = firePoint.forward * bulletSpeed;
-        }
 
         if (shootSound != null)
-        {
-            shootSound.Play();
-        }
+            shootSound.PlayOneShot(shootSound.clip);  // <--- Fix: allows overlap
     }
+
 
     private void OnDestroy()
     {
-        // Unsubscribe from the metronome event on destroy to prevent errors.
         Metronome.OnBeat -= HandleBeat;
     }
 }
