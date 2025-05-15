@@ -17,7 +17,7 @@ public class Bullet : MonoBehaviour
     {
         if (other.CompareTag("Player"))
         {
-            Debug.Log("Player hit!");
+
             // Add damage, effects, etc.
         }
     }

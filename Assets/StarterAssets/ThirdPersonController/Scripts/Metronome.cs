@@ -39,7 +39,6 @@ public class Metronome : MonoBehaviour
         }
 
         InvokeRepeating(nameof(TriggerBeat), 0f, beatInterval);
-        Debug.Log("Metronome is running");
     }
 
     private void TriggerBeat()
