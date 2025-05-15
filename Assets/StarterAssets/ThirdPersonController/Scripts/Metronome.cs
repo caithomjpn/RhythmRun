@@ -1,32 +1,78 @@
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
 using System;
-
+using System.Collections;
+using UnityEngine;
 
 public class Metronome : MonoBehaviour
 {
-    public float bpm = 120f;
-    private float beatInterval;
-    private float nextBeatTime;
+    public static bool GameHasStarted { get; private set; }
+    public static bool BeatWindowOpen { get; private set; }
+    public static bool IsActionBeat { get; private set; }
+    public static int GlobalBeatCount { get; private set; }
+    public static int CurrentBeat { get; private set; }
+
     public static event Action OnBeat;
 
+    [Header("Metronome Settings")]
+    public float bpm = 115f;
+    public AudioSource audioSource;
 
-    // Start is called before the first frame update
-    void Start()
+    private float beatInterval;
+    private int beatCount = 0;
+    private int startupBeatCounter = 0;
+
+    private void Awake()
     {
-        beatInterval = 60f / bpm;
-        nextBeatTime = Time.time + beatInterval;
-
+        GameHasStarted = false;
+        BeatWindowOpen = false;
+        IsActionBeat = false;
+        GlobalBeatCount = 0;
+        CurrentBeat = 0;
     }
 
-    // Update is called once per frame
-    void Update()
+    private void Start()
     {
-        if (Time.time >= nextBeatTime)
+        beatInterval = 60f / bpm;
+
+        if (audioSource != null)
         {
-            OnBeat?.Invoke();
-            nextBeatTime += beatInterval;
+            audioSource.Play();  // Revert to instant playback
         }
+
+        InvokeRepeating(nameof(TriggerBeat), 0f, beatInterval);
+        Debug.Log("Metronome is running");
+    }
+
+    private void TriggerBeat()
+    {
+        BeatWindowOpen = true;
+
+        beatCount++;
+        if (beatCount > 4) beatCount = 1;
+
+        GlobalBeatCount++;
+        CurrentBeat = beatCount;
+
+        IsActionBeat = (GlobalBeatCount % 4 == 2 || GlobalBeatCount % 4 == 0);
+
+        Debug.Log($"BEAT: {CurrentBeat} | Global: {GlobalBeatCount} | ActionBeat: {IsActionBeat} | GameHasStarted: {GameHasStarted}");
+
+        if (!GameHasStarted)
+        {
+            startupBeatCounter++;
+            if (startupBeatCounter >= 4)
+            {
+                GameHasStarted = true;
+                Debug.Log("GameHasStarted = true");
+            }
+        }
+
+        OnBeat?.Invoke();
+        StartCoroutine(CloseBeatWindow());
+    }
+
+    private IEnumerator CloseBeatWindow()
+    {
+        yield return new WaitForSeconds(0.3f);
+        BeatWindowOpen = false;
     }
 }

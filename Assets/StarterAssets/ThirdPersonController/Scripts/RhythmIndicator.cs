@@ -1,29 +1,42 @@
 using UnityEngine;
+using TMPro;
 using UnityEngine.UI;
 using System.Collections;
-
 public class RhythmIndicator : MonoBehaviour
 {
-    private Image indicator;
-    private Vector3 originalScale;
-    public float pulseScale = 1.3f; // Size increase when pulsing
-    public float pulseDuration = 0.1f; // Time it takes to pulse
+    [Header("Visual Settings")]
+    public TextMeshProUGUI beatNumberText;
+    public float pulseScale = 1.3f;
+    public float pulseDuration = 0.1f;
+    public Color pulseColor = Color.yellow;
 
-    void Start()
+    private Vector3 originalScale;
+    private Color originalColor;
+
+    private void Start()
     {
-        indicator = GetComponent<Image>();
+        beatNumberText.text = "Connected!";
         originalScale = transform.localScale;
 
-        // Subscribe to the metronome event
-        Metronome.OnBeat += PulseIndicator;
+        if (beatNumberText != null)
+        {
+            originalColor = beatNumberText.color;
+        }
+
+        Metronome.OnBeat += ShowBeatNumber;
     }
 
-    void PulseIndicator()
+    private void ShowBeatNumber()
     {
-        StartCoroutine(PulseEffect());
+
+        if (beatNumberText != null)
+        {
+            beatNumberText.text = Metronome.CurrentBeat.ToString();
+            beatNumberText.color = Metronome.IsActionBeat ? pulseColor : originalColor;
+        }
     }
 
-    IEnumerator PulseEffect()
+    private IEnumerator PulseEffect()
     {
         transform.localScale = originalScale * pulseScale;
         yield return new WaitForSeconds(pulseDuration);
@@ -32,6 +45,8 @@ public class RhythmIndicator : MonoBehaviour
 
     private void OnDestroy()
     {
-        Metronome.OnBeat -= PulseIndicator; // Unsubscribe when destroyed
+        Metronome.OnBeat -= ShowBeatNumber;
     }
+
+
 }

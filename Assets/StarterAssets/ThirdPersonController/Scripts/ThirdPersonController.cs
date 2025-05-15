@@ -1,32 +1,23 @@
-﻿ using UnityEngine;
-#if ENABLE_INPUT_SYSTEM 
+﻿using UnityEngine;
+#if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
 #endif
 using System.Collections;
-
-/* Note: animations are called via the controller for both the character and capsule using animator null checks
- */
+using System;
+using System.Linq;
 
 namespace StarterAssets
 {
     [RequireComponent(typeof(CharacterController))]
-#if ENABLE_INPUT_SYSTEM 
+#if ENABLE_INPUT_SYSTEM
     [RequireComponent(typeof(PlayerInput))]
 #endif
     public class ThirdPersonController : MonoBehaviour
     {
         [Header("Player")]
-        [Tooltip("Move speed of the character in m/s")]
         public float MoveSpeed = 2.0f;
-
-        [Tooltip("Sprint speed of the character in m/s")]
         public float SprintSpeed = 5.335f;
-
-        [Tooltip("How fast the character turns to face movement direction")]
-        [Range(0.0f, 0.3f)]
-        public float RotationSmoothTime = 0.12f;
-
-        [Tooltip("Acceleration and deceleration")]
+        [Range(0.0f, 0.3f)] public float RotationSmoothTime = 0.12f;
         public float SpeedChangeRate = 10.0f;
 
         public AudioClip LandingAudioClip;
@@ -34,53 +25,29 @@ namespace StarterAssets
         [Range(0, 1)] public float FootstepAudioVolume = 0.5f;
 
         [Space(10)]
-        [Tooltip("The height the player can jump")]
         public float JumpHeight = 1.2f;
-
-        [Tooltip("The character uses its own gravity value. The engine default is -9.81f")]
-        public float Gravity = -15.0f;
+        public float Gravity = -25.0f;
 
         [Space(10)]
-        [Tooltip("Time required to pass before being able to jump again. Set to 0f to instantly jump again")]
-        public float JumpTimeout = 0.50f;
-
-        [Tooltip("Time required to pass before entering the fall state. Useful for walking down stairs")]
+        public float JumpTimeout = 0.01f;
         public float FallTimeout = 0.15f;
 
         [Header("Player Grounded")]
-        [Tooltip("If the character is grounded or not. Not part of the CharacterController built in grounded check")]
         public bool Grounded = true;
-
-        [Tooltip("Useful for rough ground")]
         public float GroundedOffset = -0.14f;
-
-        [Tooltip("The radius of the grounded check. Should match the radius of the CharacterController")]
         public float GroundedRadius = 0.28f;
-
-        [Tooltip("What layers the character uses as ground")]
         public LayerMask GroundLayers;
 
         [Header("Cinemachine")]
-        [Tooltip("The follow target set in the Cinemachine Virtual Camera that the camera will follow")]
         public GameObject CinemachineCameraTarget;
-
-        [Tooltip("How far in degrees can you move the camera up")]
         public float TopClamp = 70.0f;
-
-        [Tooltip("How far in degrees can you move the camera down")]
         public float BottomClamp = -30.0f;
-
-        [Tooltip("Additional degress to override the camera. Useful for fine tuning camera position when locked")]
         public float CameraAngleOverride = 0.0f;
-
-        [Tooltip("For locking the camera position on all axis")]
         public bool LockCameraPosition = false;
 
-        // cinemachine
         private float _cinemachineTargetYaw;
         private float _cinemachineTargetPitch;
 
-        // player
         private float _speed;
         private float _animationBlend;
         private float _targetRotation = 0.0f;
@@ -88,18 +55,16 @@ namespace StarterAssets
         private float _verticalVelocity;
         private float _terminalVelocity = 53.0f;
 
-        // timeout deltatime
         private float _jumpTimeoutDelta;
         private float _fallTimeoutDelta;
 
-        // animation IDs
         private int _animIDSpeed;
         private int _animIDGrounded;
         private int _animIDJump;
         private int _animIDFreeFall;
         private int _animIDMotionSpeed;
 
-#if ENABLE_INPUT_SYSTEM 
+#if ENABLE_INPUT_SYSTEM
         private PlayerInput _playerInput;
 #endif
         private Animator _animator;
@@ -109,6 +74,7 @@ namespace StarterAssets
         private const float _threshold = 0.01f;
 
         private bool _hasAnimator;
+        private bool autoRun = true;
 
         private bool IsCurrentDeviceMouse
         {
@@ -117,20 +83,25 @@ namespace StarterAssets
 #if ENABLE_INPUT_SYSTEM
                 return _playerInput.currentControlScheme == "KeyboardMouse";
 #else
-				return false;
+                return false;
 #endif
             }
         }
-        //variables for slide and long jump
+
         private CharacterController _controller;
         private float _originalHeight;
-        public float slideSpeed = 7f;
+        public float slideSpeed = 10f;
         public float slideDuration = 1f;
         public float longJumpSpeed = 10f;
 
+        [Header("Lane Movement")]
+        public float laneOffset = 1.2f;
+        private int currentLane = 1; // 0 = Left, 1 = Center, 2 = Right
+        private bool isShiftingLane = false;
+        public float laneShiftDuration = 0.8f;
+
         private void Awake()
         {
-            // get a reference to our main camera
             if (_mainCamera == null)
             {
                 _mainCamera = GameObject.FindGameObjectWithTag("MainCamera");
@@ -140,46 +111,137 @@ namespace StarterAssets
         private void Start()
         {
             _cinemachineTargetYaw = CinemachineCameraTarget.transform.rotation.eulerAngles.y;
-            
             _hasAnimator = TryGetComponent(out _animator);
             _controller = GetComponent<CharacterController>();
             _input = GetComponent<StarterAssetsInputs>();
-#if ENABLE_INPUT_SYSTEM 
+#if ENABLE_INPUT_SYSTEM
             _playerInput = GetComponent<PlayerInput>();
 #else
-			Debug.LogError( "Starter Assets package is missing dependencies. Please use Tools/Starter Assets/Reinstall Dependencies to fix it");
+            Debug.LogError("Starter Assets package is missing dependencies.");
 #endif
-
             AssignAnimationIDs();
-
-            // reset our timeouts on start
             _jumpTimeoutDelta = JumpTimeout;
             _fallTimeoutDelta = FallTimeout;
             _originalHeight = _controller.height;
+            float beatDuration = 60f / 115f; // 115 BPM
+            SprintSpeed = 4f / beatDuration; // ~1.916 units/second
+            Metronome.OnBeat += LogPlayerXZPosition;
+
+
         }
 
         private void Update()
         {
+            if (!Metronome.GameHasStarted)
+            {
+                _input.move = Vector2.zero;
+                _input.jump = false;
+                return;
+            }
             _hasAnimator = TryGetComponent(out _animator);
 
             JumpAndGravity();
             GroundedCheck();
             Move();
-            if(Input.GetKeyDown(KeyCode.LeftControl) && _controller.isGrounded)
+
+            // ❌ BLOCK all input on wrong beats
+            if (!Metronome.IsActionBeat || !Metronome.BeatWindowOpen)
             {
+                _input.move.x = 0;
+                _input.move.y = 0;
+                _input.jump = false;
+
+                if (Input.anyKeyDown)
+                {
+                    FindObjectOfType<HitorMiss>().ShowMiss();
+                    Debug.Log("❌ Input ignored — not an action beat.");
+                }
+
+                return;
+            }
+
+
+            // 🟢 Slide (valid input)
+            if (Input.GetKeyDown(KeyCode.LeftControl) && _controller.isGrounded && Metronome.BeatWindowOpen)
+            {
+                _animator.SetTrigger("Slide");
+                FindObjectOfType<HitorMiss>().ShowHit(); // 🟢 HIT indicator
                 StartCoroutine(Slide());
             }
-            if (Input.GetKey(KeyCode.LeftShift)  && _controller.isGrounded)
+
+            // 🟢 Long jump
+            if (Input.GetKey(KeyCode.LeftShift) && _controller.isGrounded && Metronome.BeatWindowOpen)
             {
-                Debug.Log("Shift  dtected");
+                FindObjectOfType<HitorMiss>().ShowHit(); // 🟢 HIT indicator
                 StartCoroutine(LongJump());
             }
+
+            // 🟢 Jump
+            if (Input.GetKeyDown(KeyCode.Space) && _controller.isGrounded && Metronome.BeatWindowOpen)
+            {
+                FindObjectOfType<HitorMiss>().ShowHit(); // 🟢 HIT indicator
+
+                _verticalVelocity = Mathf.Sqrt(JumpHeight * -2f * Gravity);
+                if (_hasAnimator)
+                {
+                    _animator.SetBool(_animIDJump, true);
+                }
+                _jumpTimeoutDelta = JumpTimeout;
+            }
+
+            if (Input.GetKeyDown(KeyCode.R))
+            {
+                autoRun = !autoRun;
+            }
+
+            // 🟢 Lane shifting
+            if (!isShiftingLane && Metronome.BeatWindowOpen)
+            {
+                if (_input.move.x < -0.1f)
+                {
+                    FindObjectOfType<HitorMiss>().ShowHit(); // 🟢 HIT indicator
+                    StartCoroutine(ShiftByOffset(-laneOffset));
+                }
+                else if (_input.move.x > 0.1f)
+                {
+                    FindObjectOfType<HitorMiss>().ShowHit(); // 🟢 HIT indicator
+                    StartCoroutine(ShiftByOffset(+laneOffset));
+                }
+
+                _input.move.x = 0;
+            }
         }
-        IEnumerator Slide()
+        private IEnumerator ShiftByOffset(float offset)
         {
-            Debug.Log("Slide");
+            isShiftingLane = true;
+
+            float elapsedTime = 0f;
+            float duration = laneShiftDuration;
+
+            Vector3 startPosition = transform.position;
+            float targetX = Mathf.Clamp(startPosition.x + offset, -laneOffset, laneOffset);  // -1.2 to +1.2
+            Vector3 endPosition = new Vector3(targetX, startPosition.y, startPosition.z);
+
+            while (elapsedTime < duration)
+            {
+                float t = elapsedTime / duration;
+                float newX = Mathf.Lerp(startPosition.x, endPosition.x, t);
+                transform.position = new Vector3(newX, startPosition.y, startPosition.z);
+                elapsedTime += Time.deltaTime;
+                yield return null;
+            }
+
+            // Snap to exact final value
+            transform.position = new Vector3(targetX, startPosition.y, startPosition.z);
+
+            isShiftingLane = false;
+        }
+
+
+        private IEnumerator Slide()
+        {
             float originalHeight = _controller.height;
-            _controller.height = originalHeight/2;
+            _controller.height = originalHeight / 2;
             float originalSpeed = MoveSpeed;
             MoveSpeed = slideSpeed;
 
@@ -188,9 +250,9 @@ namespace StarterAssets
             _controller.height = originalHeight;
             MoveSpeed = originalSpeed;
         }
-        IEnumerator LongJump()
+
+        private IEnumerator LongJump()
         {
-            Debug.Log("Long jump!");
             float originalSpeed = SprintSpeed;
             SprintSpeed = longJumpSpeed;
             _verticalVelocity = Mathf.Sqrt(JumpHeight * -2f * Gravity) * 1.5f;
@@ -199,7 +261,30 @@ namespace StarterAssets
         }
 
         private void LateUpdate()
+
         {
+            // ❗ STRICT RHYTHM LOCK: Block all input on beats 1 and 3
+            if (!Metronome.IsActionBeat)
+            {
+                // Clear inputs (for Input System users)
+                _input.move.x = 0;
+                _input.move.y = 0;
+                _input.jump = false;
+
+                // Block raw key inputs as well (slide, jump, long jump)
+                if (Input.GetKeyDown(KeyCode.Space) ||
+                    Input.GetKeyDown(KeyCode.LeftControl) ||
+                    Input.GetKey(KeyCode.LeftShift) ||
+                    Input.GetKeyDown(KeyCode.A) ||  // Left
+                    Input.GetKeyDown(KeyCode.D)     // Right
+                )
+                {
+                    Debug.Log("❌ Input ignored — not an action beat.");
+                }
+
+                return; // Exit Update early — skip all movement, jumping, sliding
+            }
+
             CameraRotation();
         }
 
@@ -214,67 +299,29 @@ namespace StarterAssets
 
         private void GroundedCheck()
         {
-            // set sphere position, with offset
-            Vector3 spherePosition = new Vector3(transform.position.x, transform.position.y - GroundedOffset,
-                transform.position.z);
-            Grounded = Physics.CheckSphere(spherePosition, GroundedRadius, GroundLayers,
-                QueryTriggerInteraction.Ignore);
+            Vector3 spherePosition = new Vector3(transform.position.x, transform.position.y - GroundedOffset, transform.position.z);
+            Grounded = Physics.CheckSphere(spherePosition, GroundedRadius, GroundLayers, QueryTriggerInteraction.Ignore);
 
-            // update animator if using character
             if (_hasAnimator)
             {
                 _animator.SetBool(_animIDGrounded, Grounded);
             }
         }
 
-        private void CameraRotation()
-        {
-            // if there is an input and camera position is not fixed
-            if (_input.look.sqrMagnitude >= _threshold && !LockCameraPosition)
-            {
-                //Don't multiply mouse input by Time.deltaTime;
-                float deltaTimeMultiplier = IsCurrentDeviceMouse ? 1.0f : Time.deltaTime;
-
-                _cinemachineTargetYaw += _input.look.x * deltaTimeMultiplier;
-                _cinemachineTargetPitch += _input.look.y * deltaTimeMultiplier;
-            }
-
-            // clamp our rotations so our values are limited 360 degrees
-            _cinemachineTargetYaw = ClampAngle(_cinemachineTargetYaw, float.MinValue, float.MaxValue);
-            _cinemachineTargetPitch = ClampAngle(_cinemachineTargetPitch, BottomClamp, TopClamp);
-
-            // Cinemachine will follow this target
-            CinemachineCameraTarget.transform.rotation = Quaternion.Euler(_cinemachineTargetPitch + CameraAngleOverride,
-                _cinemachineTargetYaw, 0.0f);
-        }
-
         private void Move()
         {
-            // set target speed based on move speed, sprint speed and if sprint is pressed
-            float targetSpeed = Input.GetKey(KeyCode.LeftAlt)? MoveSpeed : SprintSpeed;
+            float targetSpeed = SprintSpeed;
 
-            // a simplistic acceleration and deceleration designed to be easy to remove, replace, or iterate upon
+            float forwardValue = (!Metronome.GameHasStarted) ? 0f : (autoRun ? 1.0f : _input.move.y);
+            Vector3 inputDirection = new Vector3(_input.move.x, 0.0f, forwardValue).normalized;
 
-            // note: Vector2's == operator uses approximation so is not floating point error prone, and is cheaper than magnitude
-            // if there is no input, set the target speed to 0
-            if (_input.move == Vector2.zero) targetSpeed = 0.0f;
-
-            // a reference to the players current horizontal velocity
             float currentHorizontalSpeed = new Vector3(_controller.velocity.x, 0.0f, _controller.velocity.z).magnitude;
-
             float speedOffset = 0.1f;
-            float inputMagnitude = _input.analogMovement ? _input.move.magnitude : 1f;
+            float inputMagnitude = _input.analogMovement ? inputDirection.magnitude : 1f;
 
-            // accelerate or decelerate to target speed
-            if (currentHorizontalSpeed < targetSpeed - speedOffset ||
-                currentHorizontalSpeed > targetSpeed + speedOffset)
+            if (currentHorizontalSpeed < targetSpeed - speedOffset || currentHorizontalSpeed > targetSpeed + speedOffset)
             {
-                // creates curved result rather than a linear one giving a more organic speed change
-                // note T in Lerp is clamped, so we don't need to clamp our speed
-                _speed = Mathf.Lerp(currentHorizontalSpeed, targetSpeed * inputMagnitude,
-                    Time.deltaTime * SpeedChangeRate);
-
-                // round speed to 3 decimal places
+                _speed = Mathf.Lerp(currentHorizontalSpeed, targetSpeed * inputMagnitude, Time.deltaTime * SpeedChangeRate);
                 _speed = Mathf.Round(_speed * 1000f) / 1000f;
             }
             else
@@ -285,72 +332,67 @@ namespace StarterAssets
             _animationBlend = Mathf.Lerp(_animationBlend, targetSpeed, Time.deltaTime * SpeedChangeRate);
             if (_animationBlend < 0.01f) _animationBlend = 0f;
 
-            // normalise input direction
-            Vector3 inputDirection = new Vector3(_input.move.x, 0.0f, _input.move.y).normalized;
-
-            // note: Vector2's != operator uses approximation so is not floating point error prone, and is cheaper than magnitude
-            // if there is a move input rotate player when the player is moving
-            if (_input.move != Vector2.zero)
+            if (inputDirection != Vector3.zero)
             {
-                _targetRotation = Mathf.Atan2(inputDirection.x, inputDirection.z) * Mathf.Rad2Deg +
-                                  _mainCamera.transform.eulerAngles.y;
-                float rotation = Mathf.SmoothDampAngle(transform.eulerAngles.y, _targetRotation, ref _rotationVelocity,
-                    RotationSmoothTime);
-
-                // rotate to face input direction relative to camera position
+                _targetRotation = Mathf.Atan2(inputDirection.x, inputDirection.z) * Mathf.Rad2Deg + _mainCamera.transform.eulerAngles.y;
+                float rotation = Mathf.SmoothDampAngle(transform.eulerAngles.y, _targetRotation, ref _rotationVelocity, RotationSmoothTime);
                 transform.rotation = Quaternion.Euler(0.0f, rotation, 0.0f);
             }
 
+            Vector3 moveDirection = Quaternion.Euler(0.0f, _targetRotation, 0.0f) * Vector3.forward;
 
-            Vector3 targetDirection = Quaternion.Euler(0.0f, _targetRotation, 0.0f) * Vector3.forward;
-
-            // move the player
-            _controller.Move(targetDirection.normalized * (_speed * Time.deltaTime) +
+            _controller.Move(moveDirection.normalized * (_speed * Time.deltaTime) +
                              new Vector3(0.0f, _verticalVelocity, 0.0f) * Time.deltaTime);
 
-            // update animator if using character
             if (_hasAnimator)
             {
                 _animator.SetFloat(_animIDSpeed, _animationBlend);
                 _animator.SetFloat(_animIDMotionSpeed, inputMagnitude);
             }
-        }
+            // Lock the X position to 0 after movement
+            Vector3 correctedPosition = transform.position;
 
+            // Define the allowed lanes
+            float[] allowedLanes = { -laneOffset, 0f, laneOffset };
+
+            // Snap to the nearest one
+            float nearestLane = allowedLanes.OrderBy(lane => Mathf.Abs(correctedPosition.x - lane)).First();
+            correctedPosition.x = nearestLane;
+
+            transform.position = correctedPosition;
+
+
+        }
 
         private void JumpAndGravity()
         {
             if (Grounded)
             {
-                // reset the fall timeout timer
                 _fallTimeoutDelta = FallTimeout;
 
-                // update animator if using character
                 if (_hasAnimator)
                 {
                     _animator.SetBool(_animIDJump, false);
                     _animator.SetBool(_animIDFreeFall, false);
                 }
 
-                // stop our velocity dropping infinitely when grounded
                 if (_verticalVelocity < 0.0f)
                 {
                     _verticalVelocity = -2f;
                 }
 
-                // Jump
-                if (_input.jump && _jumpTimeoutDelta <= 0.0f)
-                {
-                    // the square root of H * -2 * G = how much velocity needed to reach desired height
-                    _verticalVelocity = Mathf.Sqrt(JumpHeight * -2f * Gravity);
+                //if (_input.jump && _jumpTimeoutDelta <= 0.0f && Metronome.BeatWindowOpen)
+                //{
+                //    _verticalVelocity = Mathf.Sqrt(JumpHeight * -2f * Gravity);
 
-                    // update animator if using character
-                    if (_hasAnimator)
-                    {
-                        _animator.SetBool(_animIDJump, true);
-                    }
-                }
+                //    if (_hasAnimator)
+                //    {
+                //        _animator.SetBool(_animIDJump, true);
+                //    }
+                //    _input.jump = false;
 
-                // jump timeout
+                //}
+
                 if (_jumpTimeoutDelta >= 0.0f)
                 {
                     _jumpTimeoutDelta -= Time.deltaTime;
@@ -358,32 +400,43 @@ namespace StarterAssets
             }
             else
             {
-                // reset the jump timeout timer
                 _jumpTimeoutDelta = JumpTimeout;
 
-                // fall timeout
                 if (_fallTimeoutDelta >= 0.0f)
                 {
                     _fallTimeoutDelta -= Time.deltaTime;
                 }
                 else
                 {
-                    // update animator if using character
                     if (_hasAnimator)
                     {
                         _animator.SetBool(_animIDFreeFall, true);
                     }
                 }
 
-                // if we are not grounded, do not jump
-                _input.jump = false;
+                //_input.jump = false;
             }
 
-            // apply gravity over time if under terminal (multiply by delta time twice to linearly speed up over time)
             if (_verticalVelocity < _terminalVelocity)
             {
                 _verticalVelocity += Gravity * Time.deltaTime;
             }
+        }
+
+        private void CameraRotation()
+        {
+            if (_input.look.sqrMagnitude >= _threshold && !LockCameraPosition)
+            {
+                float deltaTimeMultiplier = IsCurrentDeviceMouse ? 1.0f : Time.deltaTime;
+
+                _cinemachineTargetYaw += _input.look.x * deltaTimeMultiplier;
+                _cinemachineTargetPitch += _input.look.y * deltaTimeMultiplier;
+            }
+
+            _cinemachineTargetYaw = ClampAngle(_cinemachineTargetYaw, float.MinValue, float.MaxValue);
+            _cinemachineTargetPitch = ClampAngle(_cinemachineTargetPitch, BottomClamp, TopClamp);
+
+            CinemachineCameraTarget.transform.rotation = Quaternion.Euler(_cinemachineTargetPitch + CameraAngleOverride, _cinemachineTargetYaw, 0.0f);
         }
 
         private static float ClampAngle(float lfAngle, float lfMin, float lfMax)
@@ -398,13 +451,9 @@ namespace StarterAssets
             Color transparentGreen = new Color(0.0f, 1.0f, 0.0f, 0.35f);
             Color transparentRed = new Color(1.0f, 0.0f, 0.0f, 0.35f);
 
-            if (Grounded) Gizmos.color = transparentGreen;
-            else Gizmos.color = transparentRed;
+            Gizmos.color = Grounded ? transparentGreen : transparentRed;
 
-            // when selected, draw a gizmo in the position of, and matching radius of, the grounded collider
-            Gizmos.DrawSphere(
-                new Vector3(transform.position.x, transform.position.y - GroundedOffset, transform.position.z),
-                GroundedRadius);
+            Gizmos.DrawSphere(new Vector3(transform.position.x, transform.position.y - GroundedOffset, transform.position.z), GroundedRadius);
         }
 
         private void OnFootstep(AnimationEvent animationEvent)
@@ -413,7 +462,7 @@ namespace StarterAssets
             {
                 if (FootstepAudioClips.Length > 0)
                 {
-                    var index = Random.Range(0, FootstepAudioClips.Length);
+                    var index = UnityEngine.Random.Range(0, FootstepAudioClips.Length);
                     AudioSource.PlayClipAtPoint(FootstepAudioClips[index], transform.TransformPoint(_controller.center), FootstepAudioVolume);
                 }
             }
@@ -426,5 +475,20 @@ namespace StarterAssets
                 AudioSource.PlayClipAtPoint(LandingAudioClip, transform.TransformPoint(_controller.center), FootstepAudioVolume);
             }
         }
+        private void LogPlayerXZPosition()
+        {
+            Vector3 pos = transform.position;
+            Debug.Log($"[Player Position] X: {pos.x:F2}, Z: {pos.z:F2}");
+        }
+        private void OnDestroy()
+        {
+            Metronome.OnBeat -= LogPlayerXZPosition;
+        }
+
+
+
+
+
+
     }
 }
