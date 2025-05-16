@@ -98,7 +98,7 @@ namespace StarterAssets
         public float laneOffset = 1.2f;
         private int currentLane = 1; // 0 = Left, 1 = Center, 2 = Right
         private bool isShiftingLane = false;
-        public float laneShiftDuration = 0.8f;
+        public float laneShiftDuration = 0.3f;
 
         private void Awake()
         {
