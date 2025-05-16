@@ -5,34 +5,34 @@ EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Scenes:
-  - enabled: 0
-    path: Assets/Scenes/SampleScene.unity
-    guid: 99c9720ab356a0642a771bea13969a05
+  - enabled: 1
+    path: Assets/StarterAssets/ThirdPersonController/Scenes/Start.unity
+    guid: 3ebbb395a21e80640a1d0523d33fc21f
   - enabled: 1
     path: Assets/StarterAssets/ThirdPersonController/Scenes/SelectStage.unity
     guid: 2bc87d97dde45ca41bd64e78c4bcd329
   - enabled: 1
     path: Assets/StarterAssets/ThirdPersonController/Scenes/Stage_Mid.unity
-    guid: 74ca5a3c5c0ba9249bd064b03f360c78
+    guid: 0ab1cda7e6178b24a9c4f6c121026001
   - enabled: 1
     path: Assets/StarterAssets/ThirdPersonController/Scenes/Stage_Hard.unity
-    guid: 3b3b1b992230d9c4cbdb72de31596fc1
+    guid: c9a60bece954f0f43a4caec60f75e765
   - enabled: 1
     path: Assets/StarterAssets/ThirdPersonController/Scenes/Stage_Easy.unity
     guid: d193dc3a28f7cb44fb1b319b8c1bd81f
   - enabled: 1
     path: Assets/StarterAssets/ThirdPersonController/Scenes/Stage_Difficult.unity
-    guid: c47a37b7d6db22f48aa225423ccf0f00
+    guid: c1321d2fc809a6446a1addb8d9b2165d
   - enabled: 1
     path: Assets/StarterAssets/ThirdPersonController/Scenes/Stage_BitDifficult.unity
-    guid: 29e5f7b3f94753e4c884adb7ae37cf13
+    guid: d69429b919747e645a9219b380daa999
   - enabled: 1
     path: Assets/StarterAssets/ThirdPersonController/Scenes/StageComplete.unity
     guid: e690798f90ee0a94d9fec9620bdb9489
   - enabled: 1
     path: Assets/StarterAssets/ThirdPersonController/Scenes/RandomStage.unity
     guid: 218af9602680e0145ae74380cb5c717c
-  - enabled: 1
-    path: Assets/StarterAssets/ThirdPersonController/Scenes/Start.unity
-    guid: 3ebbb395a21e80640a1d0523d33fc21f
+  - enabled: 0
+    path: Assets/StarterAssets/ThirdPersonController/Scenes/Playground.unity
+    guid: e9017d5f96b9f09489b4b37e1d6eb914
   m_configObjects: {}
