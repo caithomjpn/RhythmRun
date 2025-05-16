@@ -15,8 +15,10 @@ public class PressSpace : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.Q))
         {
             Debug.Log("Resetting progress and quitting...");
+            StageProgress.ResetProgress(); 
+            PlayerPrefs.DeleteAll();       
 
-            StageProgress.ResetProgress();
+            
 
             PlayerStats.Reset();
 
