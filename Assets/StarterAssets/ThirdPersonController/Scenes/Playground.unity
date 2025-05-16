@@ -420,10 +420,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2bc861b20117c4a4ab7a60fb55243432, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  obstaclePrefabs: []
-  numberOfObstacles: 2
-  spacing: 3
-  startZ: 3
+  obstaclePrefabs:
+  - {fileID: 4409478642072038436, guid: 8668480506222c14ebfadb7ab8cf1b61, type: 3}
+  numberOfObstacles: 10
+  spacing: 6
+  startZ: 20
 --- !u!4 &315309259
 Transform:
   m_ObjectHideFlags: 0
@@ -567,6 +568,56 @@ PrefabInstance:
         type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5956525765326310228, guid: 632a0aedff18aad408194c80b561a15e,
+        type: 3}
+      propertyPath: m_Materials.Array.data[0]
+      value: 
+      objectReference: {fileID: 2100000, guid: eb6c74b329c199344971ff408f5f3906, type: 2}
+    - target: {fileID: 5956525765326310228, guid: 632a0aedff18aad408194c80b561a15e,
+        type: 3}
+      propertyPath: m_Parameters.colorGradient.ctime0
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5956525765326310228, guid: 632a0aedff18aad408194c80b561a15e,
+        type: 3}
+      propertyPath: m_Parameters.colorGradient.ctime1
+      value: 55319
+      objectReference: {fileID: 0}
+    - target: {fileID: 5956525765326310228, guid: 632a0aedff18aad408194c80b561a15e,
+        type: 3}
+      propertyPath: m_Parameters.colorGradient.key1.b
+      value: 0.9607843
+      objectReference: {fileID: 0}
+    - target: {fileID: 5956525765326310228, guid: 632a0aedff18aad408194c80b561a15e,
+        type: 3}
+      propertyPath: m_Parameters.colorGradient.key1.g
+      value: 0.9349713
+      objectReference: {fileID: 0}
+    - target: {fileID: 5956525765326310228, guid: 632a0aedff18aad408194c80b561a15e,
+        type: 3}
+      propertyPath: m_Parameters.colorGradient.key1.r
+      value: 0.6666667
+      objectReference: {fileID: 0}
+    - target: {fileID: 5956525765326310228, guid: 632a0aedff18aad408194c80b561a15e,
+        type: 3}
+      propertyPath: m_Parameters.colorGradient.key2.b
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5956525765326310228, guid: 632a0aedff18aad408194c80b561a15e,
+        type: 3}
+      propertyPath: m_Parameters.colorGradient.key2.g
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5956525765326310228, guid: 632a0aedff18aad408194c80b561a15e,
+        type: 3}
+      propertyPath: m_Parameters.colorGradient.key2.r
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5956525765326310228, guid: 632a0aedff18aad408194c80b561a15e,
+        type: 3}
+      propertyPath: m_Parameters.colorGradient.m_NumColorKeys
+      value: 3
       objectReference: {fileID: 0}
     - target: {fileID: 6154810151566977082, guid: 632a0aedff18aad408194c80b561a15e,
         type: 3}
