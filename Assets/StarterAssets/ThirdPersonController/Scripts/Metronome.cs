@@ -35,7 +35,7 @@ public class Metronome : MonoBehaviour
 
         if (audioSource != null)
         {
-            audioSource.Play();  // Revert to instant playback
+            audioSource.Play();  
         }
 
         InvokeRepeating(nameof(TriggerBeat), 0f, beatInterval);

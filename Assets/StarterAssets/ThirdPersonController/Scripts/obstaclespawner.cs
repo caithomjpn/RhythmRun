@@ -88,7 +88,7 @@ public class obstaclespawner : MonoBehaviour
     {
         if (SceneManager.GetActiveScene().name == "RandomStage")
         {
-            GenerateRandomCourse(); // 
+            GenerateRandomCourse(); 
         }
     }
 
@@ -153,7 +153,7 @@ public class obstaclespawner : MonoBehaviour
             }
             else
             {
-                Destroy(clone); // safe destroy at runtime
+                Destroy(clone); 
                 continue;
             }
 

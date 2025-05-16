@@ -5,11 +5,11 @@ using System.Collections;
 
 public class StageSelector : MonoBehaviour
 {
-    public TextMeshProUGUI[] stageTexts; // assign in Inspector
+    public TextMeshProUGUI[] stageTexts; 
     private int currentIndex = 0;
     private int unlockedIndex;
 
-    public TextMeshProUGUI errorText; // assign this in the Inspector
+    public TextMeshProUGUI errorText; 
     public float errorDisplayTime = 2f;
     private Coroutine errorCoroutine;
     private void Start()

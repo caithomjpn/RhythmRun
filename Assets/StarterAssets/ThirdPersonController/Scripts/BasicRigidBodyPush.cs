@@ -1,5 +1,5 @@
 ﻿using UnityEngine;
-
+//this cs is untouched. default from starter third person
 public class BasicRigidBodyPush : MonoBehaviour
 {
 	public LayerMask pushLayers;

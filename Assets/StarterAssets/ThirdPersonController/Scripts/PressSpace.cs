@@ -3,7 +3,7 @@ using UnityEngine.SceneManagement;
 
 public class PressSpace : MonoBehaviour
 {
-    public string sceneToLoad = "SelectStage"; // Set in Inspector
+    public string sceneToLoad = "SelectStage"; 
 
     void Update()
     {

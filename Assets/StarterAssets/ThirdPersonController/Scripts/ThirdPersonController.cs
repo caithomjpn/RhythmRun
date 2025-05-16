@@ -97,7 +97,7 @@ namespace StarterAssets
 
         [Header("Lane Movement")]
         public float laneOffset = 1.2f;
-        private int currentLane = 1; // 0 = Left, 1 = Center, 2 = Right
+        private int currentLane = 1;
         private bool isShiftingLane = false;
         public float laneShiftDuration = 0.01f;
 
@@ -125,7 +125,7 @@ namespace StarterAssets
             _fallTimeoutDelta = FallTimeout;
             _originalHeight = _controller.height;
             float beatDuration = 60f / 115f; // 115 BPM
-            SprintSpeed = 4f / beatDuration; // ~1.916 units/second
+            SprintSpeed = 4f / beatDuration; 
             Metronome.OnBeat += LogPlayerXZPosition;
 
 
@@ -162,25 +162,25 @@ namespace StarterAssets
             }
 
 
-            // 🟢 Slide (valid input)
+            // Slide
             if (Input.GetKeyDown(KeyCode.LeftControl) && _controller.isGrounded && Metronome.BeatWindowOpen)
             {
                 _animator.SetTrigger("Slide");
-                FindObjectOfType<HitorMiss>().ShowHit(); // 🟢 HIT indicator
+                FindObjectOfType<HitorMiss>().ShowHit(); 
                 StartCoroutine(Slide());
             }
 
-            // 🟢 Long jump
+            // Long jump
             if (Input.GetKey(KeyCode.LeftShift) && _controller.isGrounded && Metronome.BeatWindowOpen)
             {
-                FindObjectOfType<HitorMiss>().ShowHit(); //  HIT indicator
+                FindObjectOfType<HitorMiss>().ShowHit(); 
                 StartCoroutine(LongJump());
             }
 
             // Jump
             if (Input.GetKeyDown(KeyCode.Space) && _controller.isGrounded && Metronome.BeatWindowOpen)
             {
-                FindObjectOfType<HitorMiss>().ShowHit(); //  HIT indicator
+                FindObjectOfType<HitorMiss>().ShowHit(); 
 
                 _verticalVelocity = Mathf.Sqrt(JumpHeight * -2f * Gravity);
                 if (_hasAnimator)
@@ -195,7 +195,7 @@ namespace StarterAssets
                 autoRun = !autoRun;
             }
 
-            // Lane shifting
+        
             if (Metronome.BeatWindowOpen)
             {
                 if (Input.GetKeyDown(KeyCode.A))
@@ -217,7 +217,7 @@ namespace StarterAssets
 
         }
 
-        private void ShiftInstantly(int direction) // direction = -1 or +1
+        private void ShiftInstantly(int direction) 
         {
             int nextLane = Mathf.Clamp(currentLane + direction, 0, 2);
 
@@ -266,26 +266,23 @@ namespace StarterAssets
         private void LateUpdate()
 
         {
-            // ❗ STRICT RHYTHM LOCK: Block all input on beats 1 and 3
-            if (!Metronome.IsActionBeat)
+        if (!Metronome.IsActionBeat)
             {
-                // Clear inputs (for Input System users)
+
                 _input.move.x = 0;
                 _input.move.y = 0;
                 _input.jump = false;
-
-                // Block raw key inputs as well (slide, jump, long jump)
                 if (Input.GetKeyDown(KeyCode.Space) ||
                     Input.GetKeyDown(KeyCode.LeftControl) ||
                     Input.GetKey(KeyCode.LeftShift) ||
-                    Input.GetKeyDown(KeyCode.A) ||  // Left
-                    Input.GetKeyDown(KeyCode.D)     // Right
+                    Input.GetKeyDown(KeyCode.A) || 
+                    Input.GetKeyDown(KeyCode.D)     
                 )
                 {
                     Debug.Log("❌ Input ignored — not an action beat.");
                 }
 
-                return; // Exit Update early — skip all movement, jumping, sliding
+                return; 
             }
 
             CameraRotation();

@@ -2,10 +2,9 @@ using UnityEngine;
 
 public static class StageProgress
 {
-    // Returns highest unlocked stage index (0 = Easy)
     public static int GetUnlockedStageIndex()
     {
-        return PlayerPrefs.GetInt("UnlockedStage", 0); // default = 0 (Easy only)
+        return PlayerPrefs.GetInt("UnlockedStage", 0); 
     }
 
     public static void UnlockStage(int index)
@@ -17,7 +16,6 @@ public static class StageProgress
             PlayerPrefs.Save();
         }
     }
-
     public static void ResetProgress()
     {
         PlayerPrefs.DeleteKey("UnlockedStage");

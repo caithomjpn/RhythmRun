@@ -13,12 +13,5 @@ public class Bullet : MonoBehaviour
         Destroy(gameObject, lifetime);
     }
 
-    void OnTriggerEnter(Collider other)
-    {
-        if (other.CompareTag("Player"))
-        {
 
-            // Add damage, effects, etc.
-        }
-    }
 }

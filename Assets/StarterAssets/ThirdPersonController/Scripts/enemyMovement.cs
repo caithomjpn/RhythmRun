@@ -11,9 +11,8 @@ public class enemyMovement : MonoBehaviour
     public float laneOffset = 1.2f;
     public float moveDuration = 0.5f;
 
-    private int currentLane = 1; // 0 = left, 1 = center, 2 = right
+    private int currentLane = 1; 
     private bool isShifting = false;
-
     void Update()
     {
         switch (movementPattern)
@@ -35,7 +34,6 @@ public class enemyMovement : MonoBehaviour
                 break;
         }
     }
-
     private int GetRandomLane()
     {
         int nextLane;
@@ -46,7 +44,6 @@ public class enemyMovement : MonoBehaviour
 
         return nextLane;
     }
-
     private IEnumerator ShiftLane(int targetLane)
     {
         isShifting = true;
