@@ -5,7 +5,7 @@ using TMPro;
 public class VictoryScreen : MonoBehaviour
 {
     public TextMeshProUGUI messageText;
-    public int clearedStageIndex = 0; // Set this in Inspector (0 = Easy, etc.)
+    public static int clearedStageIndex = 0;
 
     void Start()
     {

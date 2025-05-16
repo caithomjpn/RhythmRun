@@ -5,6 +5,7 @@ using UnityEngine.InputSystem;
 using System.Collections;
 using System;
 using System.Linq;
+using UnityEngine.SceneManagement;
 
 namespace StarterAssets
 {
@@ -207,6 +208,10 @@ namespace StarterAssets
                     ShiftInstantly(+1);
                     FindObjectOfType<HitorMiss>().ShowHit();
                 }
+            }
+            if (Input.GetKeyDown(KeyCode.Q))
+            {
+                SceneManager.LoadScene("SelectStage"); 
             }
 
 

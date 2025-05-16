@@ -29,4 +29,7 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/StarterAssets/ThirdPersonController/Scenes/StageComplete.unity
     guid: e690798f90ee0a94d9fec9620bdb9489
+  - enabled: 1
+    path: Assets/StarterAssets/ThirdPersonController/Scenes/RandomStage.unity
+    guid: 218af9602680e0145ae74380cb5c717c
   m_configObjects: {}
