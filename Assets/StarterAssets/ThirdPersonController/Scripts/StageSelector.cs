@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.SceneManagement;
 using TMPro;
 
@@ -6,9 +6,11 @@ public class StageSelector : MonoBehaviour
 {
     public TextMeshProUGUI[] stageTexts; // assign in Inspector
     private int currentIndex = 0;
+    private int unlockedIndex;
 
     private void Start()
     {
+        unlockedIndex = StageProgress.GetUnlockedStageIndex();
         UpdateHighlight();
     }
 
@@ -28,7 +30,14 @@ public class StageSelector : MonoBehaviour
         }
         else if (Input.GetKeyDown(KeyCode.Return))
         {
-            LoadStage(currentIndex);
+            if (currentIndex <= unlockedIndex)
+            {
+                LoadStage(currentIndex);
+            }
+            else
+            {
+                Debug.Log("Stage is locked.");
+            }
         }
     }
 
@@ -36,9 +45,27 @@ public class StageSelector : MonoBehaviour
     {
         for (int i = 0; i < stageTexts.Length; i++)
         {
-            stageTexts[i].color = (i == currentIndex) ? Color.yellow : Color.white;
-            stageTexts[i].transform.localScale = (i == currentIndex) ? Vector3.one * 1.2f : Vector3.one;
+            var tmp = stageTexts[i];
+
+            bool isUnlocked = i <= unlockedIndex;
+
+            // Visual feedback
+            tmp.color = (i == currentIndex)
+                ? (isUnlocked ? Color.yellow : Color.gray)
+                : (isUnlocked ? Color.white : Color.gray);
+
+            tmp.transform.localScale = (i == currentIndex) ? Vector3.one * 1.2f : Vector3.one;
+
+            // Optionally append  for cleared stages
+            tmp.text = GetStageName(i);
         }
+    }
+
+    string GetStageName(int i)
+    {
+        string[] stageNames = { "Easy", "Mid", "Bit Difficult", "Difficult", "Hard" };
+        bool cleared = StageProgress.IsStageCleared(i);
+        return cleared ? $"{stageNames[i]}     /" : stageNames[i];
     }
 
     void LoadStage(int index)

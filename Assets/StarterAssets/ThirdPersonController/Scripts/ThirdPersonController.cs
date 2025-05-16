@@ -98,7 +98,7 @@ namespace StarterAssets
         public float laneOffset = 1.2f;
         private int currentLane = 1; // 0 = Left, 1 = Center, 2 = Right
         private bool isShiftingLane = false;
-        public float laneShiftDuration = 0.3f;
+        public float laneShiftDuration = 0.01f;
 
         private void Awake()
         {
@@ -172,14 +172,14 @@ namespace StarterAssets
             // 🟢 Long jump
             if (Input.GetKey(KeyCode.LeftShift) && _controller.isGrounded && Metronome.BeatWindowOpen)
             {
-                FindObjectOfType<HitorMiss>().ShowHit(); // 🟢 HIT indicator
+                FindObjectOfType<HitorMiss>().ShowHit(); //  HIT indicator
                 StartCoroutine(LongJump());
             }
 
-            // 🟢 Jump
+            // Jump
             if (Input.GetKeyDown(KeyCode.Space) && _controller.isGrounded && Metronome.BeatWindowOpen)
             {
-                FindObjectOfType<HitorMiss>().ShowHit(); // 🟢 HIT indicator
+                FindObjectOfType<HitorMiss>().ShowHit(); //  HIT indicator
 
                 _verticalVelocity = Mathf.Sqrt(JumpHeight * -2f * Gravity);
                 if (_hasAnimator)
@@ -194,48 +194,46 @@ namespace StarterAssets
                 autoRun = !autoRun;
             }
 
-            // 🟢 Lane shifting
-            if (!isShiftingLane && Metronome.BeatWindowOpen)
+            // Lane shifting
+            if (Metronome.BeatWindowOpen)
             {
-                if (_input.move.x < -0.1f)
+                if (Input.GetKeyDown(KeyCode.A))
                 {
-                    FindObjectOfType<HitorMiss>().ShowHit(); // 🟢 HIT indicator
-                    StartCoroutine(ShiftByOffset(-laneOffset));
+                    ShiftInstantly(-1);
+                    FindObjectOfType<HitorMiss>().ShowHit();
                 }
-                else if (_input.move.x > 0.1f)
+                else if (Input.GetKeyDown(KeyCode.D))
                 {
-                    FindObjectOfType<HitorMiss>().ShowHit(); // 🟢 HIT indicator
-                    StartCoroutine(ShiftByOffset(+laneOffset));
+                    ShiftInstantly(+1);
+                    FindObjectOfType<HitorMiss>().ShowHit();
                 }
-
-                _input.move.x = 0;
             }
+
+
         }
-        private IEnumerator ShiftByOffset(float offset)
+
+        private void ShiftInstantly(int direction) // direction = -1 or +1
         {
-            isShiftingLane = true;
+            int nextLane = Mathf.Clamp(currentLane + direction, 0, 2);
 
-            float elapsedTime = 0f;
-            float duration = laneShiftDuration;
-
-            Vector3 startPosition = transform.position;
-            float targetX = Mathf.Clamp(startPosition.x + offset, -laneOffset, laneOffset);  // -1.2 to +1.2
-            Vector3 endPosition = new Vector3(targetX, startPosition.y, startPosition.z);
-
-            while (elapsedTime < duration)
+            if (nextLane == currentLane)
             {
-                float t = elapsedTime / duration;
-                float newX = Mathf.Lerp(startPosition.x, endPosition.x, t);
-                transform.position = new Vector3(newX, startPosition.y, startPosition.z);
-                elapsedTime += Time.deltaTime;
-                yield return null;
+                Debug.Log(" Already at this lane, skipping shift.");
+                return;
             }
 
-            // Snap to exact final value
-            transform.position = new Vector3(targetX, startPosition.y, startPosition.z);
+            currentLane = nextLane;
+            Debug.Log($" currentLane = {currentLane}, direction = {direction}");
 
-            isShiftingLane = false;
+            float[] lanePositions = { -laneOffset, 0f, laneOffset };
+            Vector3 pos = transform.position;
+            pos.x = lanePositions[currentLane];
+            transform.position = pos;
+
+            Debug.Log($" Shifted to lane {currentLane}, X = {pos.x}");
         }
+
+
 
 
         private IEnumerator Slide()
@@ -357,8 +355,7 @@ namespace StarterAssets
 
             // Snap to the nearest one
             float nearestLane = allowedLanes.OrderBy(lane => Mathf.Abs(correctedPosition.x - lane)).First();
-            correctedPosition.x = nearestLane;
-
+            correctedPosition.x = allowedLanes[currentLane];
             transform.position = correctedPosition;
 
 
