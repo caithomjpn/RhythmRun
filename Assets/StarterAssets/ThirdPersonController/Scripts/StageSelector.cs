@@ -23,7 +23,7 @@ public class StageSelector : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.Q))
         {
-            SceneManager.LoadScene("StartPage"); 
+            SceneManager.LoadScene("Start"); 
         }
         if (stageTexts == null || stageTexts.Length == 0) return;
 

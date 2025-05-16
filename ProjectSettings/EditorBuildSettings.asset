@@ -32,4 +32,7 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/StarterAssets/ThirdPersonController/Scenes/RandomStage.unity
     guid: 218af9602680e0145ae74380cb5c717c
+  - enabled: 1
+    path: Assets/StarterAssets/ThirdPersonController/Scenes/Start.unity
+    guid: 3ebbb395a21e80640a1d0523d33fc21f
   m_configObjects: {}
